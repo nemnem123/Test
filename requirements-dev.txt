@@ -1,0 +1,4 @@
+pytest==8.0.0
+requests==2.31.0
+moto[dynamodb]==5.0.0  # Thư viện giả lập AWS Services
+pytest-mock==3.12.0    # Thư viện để giả lập (mock) các class/hàm

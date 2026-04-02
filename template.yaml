@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Hệ thống API Serverless bằng Python + DynamoDB kết hợp Clean Architecture.
+
+Resources:
+  # 1. Định nghĩa Bảng DynamoDB
+  EchoTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: EchoTable-SAM
+      PrimaryKey:
+        Name: id
+        Type: String
+
+  # 2. Định nghĩa Lambda Function
+  EchoApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: EchoApiFunction-SAM
+      CodeUri: lambda/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref EchoTable # Tự động nhét tên bảng vào biến môi trường
+      Policies:
+        # Cấp quyền cho Lambda được thao tác (CRUD) trên bảng EchoTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EchoTable
+      Events:
+        # 3. Định nghĩa API Gateway đính kèm vào Lambda
+        ApiCatchAll:
+          Type: HttpApi # Sử dụng HTTP API (version 2.0)
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  # In ra URL của API sau khi deploy thành công
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://be6i1i39qb.execute-api.us-east-1.amazonaws.com/"
