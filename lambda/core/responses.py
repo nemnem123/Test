@@ -8,3 +8,5 @@ def build_response(status_code, body):
         },
         "body": json.dumps(body)
     }
+// Đây là một hàm tiện ích để xây dựng response chuẩn cho API Gateway
+// Nó giúp đảm bảo mọi response đều có cấu trúc giống nhau và dễ dàng chỉnh sửa
