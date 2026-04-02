@@ -1,0 +1,69 @@
+name: Production Pipeline (AWS SAM)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # JOB 1: CHẠY UNIT TEST
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dev Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Pytest (Unit Tests)
+        run: |
+          pytest tests/unit/ -v
+
+  # JOB 2: DEPLOY HẠ TẦNG & CODE BẰNG AWS SAM
+  deploy:
+    name: Build & Deploy with SAM
+    needs: test # Bắt buộc Job Test phải Pass mới được Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Bước này SAM sẽ tự vào thư mục lambda/, đọc requirements.txt và đóng gói code chuẩn xác
+      - name: SAM Build
+        run: sam build --use-container
+
+      # Bước này SAM sẽ đọc template.yaml và tự động tạo hạ tầng trên AWS
+      - name: SAM Deploy
+        run: |
+          sam deploy \
+            --stack-name EchoApi-Production-Stack \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
